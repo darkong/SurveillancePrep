@@ -1,0 +1,604 @@
+%let update = 01072014;
+%let year = 2011_2013; 
+
+libname reposit 'I:\Surveillance Data\Acute HBV';
+
+PROC IMPORT OUT= WORK.hbv_sys
+            DATAFILE= "I:\Surveillance Data\Acute HBV\&year. file documentation\HBVCumulative&update..xlsx" 
+            DBMS=EXCEL REPLACE;
+     RANGE="HBVCumulative&update.$"; 
+     GETNAMES=YES;
+     MIXED=NO;
+     SCANTEXT=YES;
+     USEDATE=YES;
+     SCANTIME=YES;
+RUN;
+
+PROC IMPORT OUT= WORK.CLI_death 
+            DATATABLE= "COMPOTHSX" 
+            DBMS=ACCESS REPLACE;
+     DATABASE="I:\Surveillance Data\Acute HBV\&year. file documentation\HBVCLI&update..mdb"; 
+     SCANMEMO=YES;
+     USEDATE=NO;
+     SCANTIME=YES;
+RUN;
+
+
+PROC IMPORT OUT= WORK.CLI_testrs 
+            DATATABLE= "HEPBCLICRRSNTST" 
+            DBMS=ACCESS REPLACE;
+     DATABASE="I:\Surveillance Data\Acute HBV\&year. file documentation\HBVCLI&update..mdb"; 
+     SCANMEMO=YES;
+     USEDATE=NO;
+     SCANTIME=YES;
+RUN;
+
+
+PROC IMPORT OUT= WORK.CLI_sxs 
+            DATATABLE= "hepbclicrsignsx" 
+            DBMS=ACCESS REPLACE;
+     DATABASE="I:\Surveillance Data\Acute HBV\&year. file documentation\HBVCLI&update..mdb"; 
+     SCANMEMO=YES;
+     USEDATE=NO;
+     SCANTIME=YES;
+RUN;
+
+PROC IMPORT OUT= WORK.CLI_vxhx 
+            DATATABLE= "hepbclicrvachx" 
+            DBMS=ACCESS REPLACE;
+     DATABASE="I:\Surveillance Data\Acute HBV\&year. file documentation\HBVCLI&update..mdb"; 
+     SCANMEMO=YES;
+     USEDATE=NO;
+     SCANTIME=YES;
+RUN;
+
+PROC IMPORT OUT= WORK.CLI_hosp 
+            DATATABLE= "hosp" 
+            DBMS=ACCESS REPLACE;
+     DATABASE="I:\Surveillance Data\Acute HBV\&year. file documentation\HBVCLI&update..mdb"; 
+     SCANMEMO=YES;
+     USEDATE=NO;
+     SCANTIME=YES;
+RUN;
+
+PROC IMPORT OUT= WORK.CLI_hospdtl 
+            DATATABLE= "hospdtl" 
+            DBMS=ACCESS REPLACE;
+     DATABASE="I:\Surveillance Data\Acute HBV\&year. file documentation\HBVCLI&update..mdb"; 
+     SCANMEMO=YES;
+     USEDATE=NO;
+     SCANTIME=YES;
+RUN;
+
+PROC IMPORT OUT= WORK.LAB_lftdx 
+            DATATABLE= "dxlvrenzlev" 
+            DBMS=ACCESS REPLACE;
+     DATABASE="I:\Surveillance Data\Acute HBV\&year. file documentation\HBVLAB&update..mdb"; 
+     SCANMEMO=YES;
+     USEDATE=NO;
+     SCANTIME=YES;
+RUN;
+
+PROC IMPORT OUT= WORK.LAB_tst
+            DATATABLE= "HEPBLABCRDXTST" 
+            DBMS=ACCESS REPLACE;
+     DATABASE="I:\Surveillance Data\Acute HBV\&year. file documentation\HBVLAB&update..mdb"; 
+     SCANMEMO=YES;
+     USEDATE=NO;
+     SCANTIME=YES;
+RUN;
+
+
+PROC IMPORT OUT= WORK.LAB_tstoth
+            DATATABLE= "HEPBLABCRDXTSTOTH" 
+            DBMS=ACCESS REPLACE;
+     DATABASE="I:\Surveillance Data\Acute HBV\&year. file documentation\HBVLAB&update..mdb"; 
+     SCANMEMO=YES;
+     USEDATE=NO;
+     SCANTIME=YES;
+RUN;
+
+PROC IMPORT OUT= WORK.EPI_epilink
+            DATATABLE= "EPILINK" 
+            DBMS=ACCESS REPLACE;
+     DATABASE="I:\Surveillance Data\Acute HBV\&year. file documentation\HBVEPI&update..mdb"; 
+     SCANMEMO=YES;
+     USEDATE=NO;
+     SCANTIME=YES;
+RUN;
+
+PROC IMPORT OUT= WORK.EPI_riskf
+            DATATABLE= "HEPBEPICRRISKFACT" 
+            DBMS=ACCESS REPLACE;
+     DATABASE="I:\Surveillance Data\Acute HBV\&year. file documentation\HBVEPI&update..mdb"; 
+     SCANMEMO=YES;
+     USEDATE=NO;
+     SCANTIME=YES;
+RUN;
+
+PROC IMPORT OUT= WORK.EPI_FAC
+            DATATABLE= "HEPBEPICRFac" 
+            DBMS=ACCESS REPLACE;
+     DATABASE="I:\Surveillance Data\Acute HBV\&year. file documentation\HBVEPI&update..mdb"; 
+     SCANMEMO=YES;
+     USEDATE=NO;
+     SCANTIME=YES;
+RUN;
+
+PROC IMPORT OUT= WORK.EPI_details
+            DATATABLE= "HEPBEPICRDETAILS" 
+            DBMS=ACCESS REPLACE;
+     DATABASE="I:\Surveillance Data\Acute HBV\&year. file documentation\HBVEPI&update..mdb"; 
+     SCANMEMO=YES;
+     USEDATE=NO;
+     SCANTIME=YES;
+RUN;
+
+/* change incidentid to numeric variable */
+%macro idformat (dataset);
+data &dataset.;
+set &dataset.;
+newincidentid = incidentid*1;
+drop incidentid;
+rename newincidentid = incidentid;
+run;
+%mend;
+
+%idformat(cli_death);
+%idformat(cli_hosp);
+%idformat(cli_hospdtl);
+%idformat(cli_sxs);
+%idformat(cli_vxhx);
+%idformat(cli_testrs);
+%idformat(epi_details);
+%idformat(epi_epilink);
+%idformat(epi_fac);
+%idformat(epi_riskf);
+%idformat(lab_lftdx);
+%idformat(lab_tst);
+%idformat(lab_tstoth);
+
+/* Remove errant record */
+%macro dedup(set);
+proc sort data = &SET. ;
+by incidentid forminstanceid;
+run;
+
+data &SET.;
+set &SET.;
+by incidentid forminstanceid;
+if last.incidentid;
+run;
+%mend;
+
+%dedup(cli_sxs);
+%dedup(cli_testrs);
+%dedup(cli_vxhx);
+
+/* Transpose Hospital data */
+proc freq data = cli_hospdtl order = freq;
+tables incidentid/ noprint out = hospcount;
+run;
+
+data _null_;
+set hospcount;
+call symput('NHOSP', compress(put(count, 3.)));
+stop;
+run;
+
+proc sort data = cli_hospdtl;
+by incidentid HOSPDTLADMITDT;
+run;
+
+data cli_hospdtlw (keep = incidentid
+				   HOSPNAME1 - HOSPNAME&NHOSP
+				   HOSPADDR1 - HOSPADDR&NHOSP
+				   HOSPCITY1 - HOSPCITY&NHOSP
+				   HOSPZIP1 - HOSPZIP&NHOSP
+				   HOSPADMDT1 - HOSPADMDT&NHOSP
+				   HOSPDISDT1 - HOSPDISDT&NHOSP
+				   HOSPMRN1 - HOSPMRN&NHOSP
+				   HOSPDISDX1 - HOSPDISDX&NHOSP);
+set cli_hospdtl;
+by incidentid;
+array name {&NHOSP} $50 HOSPNAME1 - HOSPNAME&NHOSP;
+array address {&NHOSP} $50 HOSPADDR1 - HOSPADDR&NHOSP;
+array city {&NHOSP} $25 HOSPCITY1 - HOSPCITY&NHOSP;
+array zip {&NHOSP} HOSPZIP1 - HOSPZIP&NHOSP;
+array admit {&NHOSP} HOSPADMDT1 - HOSPADMDT&NHOSP;
+array disch {&NHOSP} HOSPDISDT1 - HOSPDISDT&NHOSP;
+array mrn {&NHOSP} $20 HOSPMRN1 - HOSPMRN&NHOSP;
+array dx {&NHOSP} $40 HOSPDISDX1 - HOSPDISDX&NHOSP;
+retain HOSPNAME1 - HOSPNAME&NHOSP HOSPADDR1 - HOSPADDR&NHOSP HOSPCITY1 - HOSPCITY&NHOSP HOSPZIP1 - HOSPZIP&NHOSP HOSPADMDT1 - HOSPADMDT&NHOSP
+	   HOSPDISDT1 - HOSPDISDT&NHOSP HOSPMRN1 - HOSPMRN&NHOSP HOSPDISDX1 - HOSPDISDX&NHOSP;
+if first.incidentid then I = 1;
+else I + 1;
+name{I} = HOSPDTLNAME;
+address{I} = HOSPDTLADDRESS;
+city{I} = HOSPDTLCITY;
+zip{I} = substr(HOSPDTLZIPCODE, 1, 5);
+admit{I} = HOSPDTLADMITDT;
+disch{I} = HOSPDTLDISCHDT;
+mrn{I} = HOSPDTLMRN;
+dx{I} = HOSPDTLDISCHDX;
+if last.incidentid;
+if I < &NHOSP then do I = I+1 to &NHOSP;
+name{I} = '';
+address{I} = '';
+city{I} = '';
+zip{I} = .;
+admit{I} = .;
+disch{I} = .;
+mrn{I} = '';
+dx{I} = '';
+end;
+run;
+
+proc freq data = epi_fac order = freq;
+tables incidentid/ noprint out = faccount;
+run;
+
+data _null_;
+set faccount;
+call symput('NFAC', compress(put(count, 3.)));
+stop;
+run;
+
+proc sort data = epi_fac;
+by incidentid HEPBEPICRFacDt;
+run;
+
+/* Transpose Epi Risk Factor data */
+data epi_facw (keep = incidentid
+				   FacName1 - FacName&NFAC
+				   HProc1 - HProc&NFAC
+				   CProc1 - CProc&NFAC
+				   FacFDt1 - FacFDt&NFAC
+				   FacLDt1 - FacLDt&NFAC
+				   FacComment1 - FacComment&NFAC);
+set epi_fac;
+by incidentid;
+array fac {&NFAC} $50 FacName1 - FacName&NFAC;
+array hproc {&NFAC} $50 HProc1 - HProc&NFAC;
+array cproc {&NFAC} $50 CProc1 - CProc&NFAC;
+array initdt {&NFAC} FacFDt1 - FacFDt&NFAC;
+array lastdt {&NFAC} FacLDt1 - FacLDt&NFAC;
+array comm {&NFAC} $75 FacComment1 - FacComment&NFAC;
+retain FacName1 - FacName&NFAC HProc1 - HProc&NFAC CProc1 - CProc&NFAC FacFDt1 - FacFDt&NFAC FacLDt1 - FacLDt&NFAC FacComment1 - FacComment&NFAC;
+if first.incidentid then I = 1;
+else I + 1;
+fac{I} = HEPBEPICRFacName;
+hproc{I} = HEPBEPICRFacHealthProc;
+cproc{I} = HEPBEPICRFacCosmProc;
+initdt{I} = HEPBEPICRFacDt;
+lastdt{I} = HEPBEPICRFacLastDt;
+comm{I} = HEPBEPICRFacCom;
+if last.incidentid;
+if I < &NFAC then do I = I+1 to &NFAC;
+fac{I} = '';
+hproc{I} = '';
+cproc{I} = '';
+initdt{I} = .;
+lastdt{I} = .;
+comm{I} = '';
+end;
+run;
+
+/* Merge everying together */
+
+proc sql;
+	create table hbv&year. as
+	select a.IncidentID,
+		   a.CMRNumber,
+		   a.DisShort,
+		   a.PersonId,
+		   a.LastName,
+		   a.FirstName,
+		   a.MiddleName,
+		   a.SSN,
+		   a.DOB,
+		   a.Age,
+		   a.Ethnicity,
+		   a.Race,
+		   a.RaceAIAN,
+		   a.RaceASIAN,
+		   a.RaceBLACK,
+		   a.RaceNHPI,
+		   a.RaceOTHER,
+		   a.RaceWHITE,
+		   a.RaceUNK,
+		   a.Address,
+		   a.AptNo,
+		   a.City,
+		   a.State,
+		   a.Zip,
+		   a.Ctract,
+		   a.CensusBlock,
+		   a.Latitude,
+		   a.Longitude,
+		   a.CntyofResid,
+		   a.Country,
+		   a.CountryBirth,
+		   a.DtArrival,
+		   a.HomePhone,
+		   a.CellPhone,
+		   a.WorkPhone,
+		   a.Email,
+		   a.Sex,
+		   a.GenderSpM,
+		   a.GenderSpF,
+		   a.GenderSpMTF,
+		   a.GenderSpFTM,
+		   a.GenderSpREF,
+		   a.GenderSpUNK,
+		   a.Pregnant,
+		   a.EDD,
+		   a.OccSettingType,
+		   a.OccSettingSpec,
+		   a.Occupation,
+		   a.OccSpecify,
+		   a.OccLocation,
+		   a.LHJ,
+		   a.LHJNumber,
+		   a.SecondLHJ,
+		   a.RSName,
+		   a.RSLocation,
+		   a.RSAddress,
+		   a.RSCity,
+		   a.RSState,
+		   a.RSZipCode,
+		   a.RSPhone,
+		   a.Laboratory,
+		   a.LabCity,
+		   a.LabState,
+		   a.ClusterID,
+		   a.PtHospitalized,
+		   a.Inpatient,
+		   a.Hospital,
+		   a.DtOnset,
+		   a.DtLabCollect,
+		   a.DtLabResult,
+		   a.DtDiagnosis,
+		   a.DtDeath,
+		   a.DtReceived,
+		   a.DtCreate,
+		   a.DtEpisode,
+		   a.DtClosed,
+		   a.DtAdmit,
+		   a.Dtdischarge,
+		   a.Istatus,
+		   a.Pstatus,
+		   a.Rstatus,
+		   a.DtLastEdit,
+		   b.HEPBCLICRRSNTSTRSN as tstreas,
+		   b.HEPBCLICRRSNTSTRSNSPFY as tstreasspfy,
+		   c.HEPBCLICRSIGNSXSYMPTOMATIC as symptomatic,
+		   c.HEPBCLICRSIGNSXSX as sxs,
+		   c.HEPBCLICRSIGNSXSXSPFY as sxsspfy,
+		   d.COMPOTHSXDIED as died,
+		   e.HOSPER as er,
+		   e.HOSPHOSPITALIZED as hosp,
+		   e.HOSPDAYSHOSP as hospnites,
+		   f.HEPBCLICRVACHXIMMHEPB as hbvax,
+		   f.HEPBCLICRVACHXVACTYPEHEPB as hbvaxtype,
+		   f.HEPBCLICRVACHXVAC1HEPB as hbvax1,
+		   f.HEPBCLICRVACHXVAC1DTHEPB as hbvax1dt,
+		   f.HEPBCLICRVACHXVAC2HEPB as hbvax2,
+		   f.HEPBCLICRVACHXVAC2DTHEPB as hbvax2dt,
+		   f.HEPBCLICRVACHXVAC3HEPB as hbvax3,
+		   f.HEPBCLICRVACHXVAC3DTHEPB as hbvax3dt,
+  		   f.HEPBCLICRVACHXRSNNOTVAC as notvaxreas,
+		   f.HEPBCLICRVACHXANTIHBTST as pvst,
+		   f.HEPBCLICRVACHXANTIHBTSTSERUM as pvstr,
+		   f.HEPBCLICRVACHXIMMHEPA as havax,
+		   f.HEPBCLICRVACHXVACTYPEHEPA as havaxtype,
+		   f.HEPBCLICRVACHXVAC1HEPA as havax1,
+		   f.HEPBCLICRVACHXVAC1DTHEPA as havax1dt,
+		   f.HEPBCLICRVACHXVAC2HEPA as havax2,
+		   f.HEPBCLICRVACHXVAC2DTHEPA as havax2dt,
+		   f.HEPBCLICRVACHXCOMMENTS as vaxcomment,
+		   g.DXLVRENZLEVALTSGPTRSLT as rawalt,
+		   g.DXLVRENZLEVALTSGPTDT as altdt,
+		   g.DXLVRENZLEVALTSGOTRSLT as rawast,
+		   g.DXLVRENZLEVALTSGOTDT as astdt, 
+		   g.DXLVRENZLEVBILIRUBINRSLT as rawbili,
+		   g.DXLVRENZLEVBILIRUBINDT as bilidt,
+ 		   h.HEPBLABCRDXTSTHBSAGRSLT as hbsagr,
+		   h.HEPBLABCRDXTSTHBSAGDT as hbsagdt,
+		   h.HEPBLABCRDXTSTANTIHBCIGMRSLT as igmhbcr,
+		   h.HEPBLABCRDXTSTANTIHBCIGMDT as igmhbcdt,
+		   h.HEPBLABCRDXTSTANTIHBSRSLT as anithbsr,
+		   h.HEPBLABCRDXTSTANTIHBSDT as antihbsdt,
+		   h.HEPBLABCRDXTSTANTIHBCRSLT as antihbcr,
+		   h.HEPBLABCRDXTSTANTIHBCDT as antihbcdt,
+		   h.HEPBLABCRDXTSTHBeAgRslt as hbeagr,
+		   h.HEPBLABCRDXTSTHBeAgDt as hbeagdt,
+		   h.HEPBLABCRDXTSTHBVDNAQUALRSLT as hbvqualr,
+		   h.HEPBLABCRDXTSTDNAQUALDT as hbvqualdt,
+		   h.HEPBLABCRDXTSTHBVDNARslt as hbviur,
+		   h.HEPBLABCRDXTSTHBVDNADt as hbviudt,  
+		   i.HEPBLABCRDXTSTOTHANTIHAVIGMRSLT as igmhavr,
+		   i.HEPBLABCRDXTSTOTHANTIHAVIGMDT as igmhavdt,
+		   i.HEPBLABCRDXTSTOTHANTIHAVRSLT as antihavr,
+		   i.HEPBLABCRDXTSTOTHANTIHAVDT as antihavdt,
+		   i.HEPBLABCRDXTSTOTHANTIHCVRSLT as antihcvr,
+		   i.HEPBLABCRDXTSTOTHANTIHCVCUTRATIO as antihcvrat,
+		   i.HEPBLABCRDXTSTOTHANTIHCVTRUPOS as antihcvtrupos,
+		   i.HEPBLABCRDXTSTOTHANTIHCVDT as antihcvdt,
+		   i.HEPBLABCRDXTSTOTHHCVRIBARSLT as hcvribar,
+		   i.HEPBLABCRDXTSTOTHHCVRIBADT as hcvribadt,
+		   i.HEPBLABCRDXTSTOTHHCVRNARSLT as hcvqualr,
+		   i.HEPBLABCRDXTSTOTHHCVRNADT as hcvqualdt,
+		   i.HEPBLABCRDXTSTOTHANTIHDVRSLT as antihdvr,
+		   i.HEPBLABCRDXTSTOTHANTIHDVDT as antihdvdt,
+		   i.HEPBLABCRDXTSTOTHANTIHEVRSLT as antihevr,
+		   i.HEPBLABCRDXTSTOTHANTIHEVDT as antihevdt,
+		   j.HEPBEPICRRISKFACTContact as contact,
+		   j.HEPBEPICRRISKFACTContactDate as contactdt,
+		   j.HEPBEPICRRISKFACTContactType as contacttype,
+		   j.HEPBEPICRRISKFACTContactTypeSpec as contactspfy,
+		   j.HEPBEPICRRISKFACTContactComment as contactcomment,
+		   j.HEPBEPICRRISKFACTSTICKPUNCTURBLD as stickpunctdt,
+		   j.HEPBEPICRRISKFACTSTICKPUNCTURBL0 as stickpunct,
+		   j.HEPBEPICRRISKFACTOTHEXPBLD as othexp,
+		   j.HEPBEPICRRISKFACTOTHEXPBLDDate as othexpdt,
+ 		   j.HEPBEPICRRISKFACTBLDTRANS as bldtrans,
+		   j.HEPBEPICRRISKFACTHEMODIALYSIS as hemodial,
+		   j.HEPBEPICRRISKFACTPRIORHOSP as prhosp,
+		   j.HEPBEPICRRISKFACTOUTPATPROC as outpat,
+		   j.HEPBEPICRRISKFACTIMORIV as rxinject,
+		   j.HEPBEPICRRISKFACTDENTALORAL as dental,
+		   j.HEPBEPICRRISKFACTOTHSURG as surgery,
+		   j.HEPBEPICRRISKFACTPHBOTFINGERBLD as fstick,
+		   j.HEPBEPICRRISKFACTPodProc as podiat,
+		   j.HEPBEPICRRISKFACTChemoTreat as chemo,
+		   j.HEPBEPICRRISKFACTACUPUNCTURER as acupunct,
+		   j.HEPBEPICRRISKFACTBODYPIERCING as bpierce,
+		   j.HEPBEPICRRISKFACTBODYPIERCINGLOC as bpierceloc,
+		   j.HEPBEPICRRISKFACTTATTOO as tattoo,
+		   j.HEPBEPICRRISKFACTTATTOOLOC as tattooloc,
+		   j.HEPBEPICRRISKFACTMani as mani,
+		   j.HEPBEPICRRISKFACTDRGNOTRX as inject,
+		   j.HEPBEPICRRISKFACTSTREETDRG as noninject,
+		   j.HEPBEPICRRISKFACTINCARCERATED as inmate,
+		   j.HEPBEPICRRISKFACTMALESEX as msex,
+		   j.HEPBEPICRRISKFACTMALESEXNUM as msexnum,
+		   j.HEPBEPICRRISKFACTFEMALESEX as fsex,
+		   j.HEPBEPICRRISKFACTFEMALESEXNUM as fsexnum,
+		   j.HEPBEPICRRISKFACTSTDTREATED as stdtx,
+		   j.HEPBEPICRRISKFACTBLDDONAT as bdonor,
+		   j.HEPBEPICRRISKFACTBLDDONATSPFY as bdonorspfy,
+		   j.HEPBEPICRRISKFACTNEGHBSAG as prneghbsag,
+		   j.HEPBEPICRRISKFACTNEGHBSAGDate as prnegbsag,
+		   k.EPILINKKNOWNCASE as epilink,
+		   k.EPILINKCONTNAMECASENUM as epilinkid,
+		   l.HEPBEPICRDETAILSSrces as suspsrc,
+		   l.HEPBEPICRDETAILSSrcesSpcfy as suspsrcspfy,
+		   l.HEPBEPICRDETAILSNOTES as epicomment,
+		   m.*,
+		   n.*
+from hbv_sys as a left join cli_testrs as b
+on a.incidentid = b.incidentid
+left join cli_sxs as c
+on a.incidentid = c.incidentid
+left join cli_death as d
+on a.incidentid = d.incidentid
+left join cli_hosp as e
+on a.incidentid = e.incidentid
+left join cli_vxhx as f
+on a.incidentid = f.incidentid 
+left join lab_lftdx as g
+on a.incidentid = g.incidentid
+left join lab_tst as h
+on a.incidentid = h.incidentid
+left join lab_tstoth as i
+on a.incidentid = i.incidentid
+left join epi_riskf as j
+on a.incidentid = j.incidentid
+left join epi_epilink as k
+on a.incidentid = k.incidentid
+left join epi_details as l
+on a.incidentid = l.incidentid 
+left join cli_hospdtlw as m
+on a.incidentid = m.incidentid
+left join epi_facw as n
+on a.incidentid = n.incidentid;
+quit;
+run;
+
+
+data hbv&year.;
+length transcat $14. raceeth $8.;
+set hbv&year.;
+cyear = year(dtepisode);
+alt = input(compress(rawalt, '1234567890.', 'k'), 8.);
+ast = input(compress(rawast, '1234567890.', 'k'), 8.);
+bili = input(compress(rawbili, '1234567890.', 'k'), 8.);
+/* 2011 case definition
+Some cases were countied if IgM HBc and IgM HAV tests weren't done but would likely be negative*/
+if cyear = 2011 then do;
+	if alt > 200 then altcrit = 1;
+	if index(sxs, 'JAUND') > 0 then sxscrit = 1;
+	if dtonset ^= . then onsetcrit = 1;
+	if igmhavr ^= 'POS' then igmhavcrit = 1;
+	if igmhbcr = 'POS' then igmhbccrit = 1;
+	if hbsagr = 'POS' then hbsagrcrit = 1;
+	if ((sxscrit = 1 or altcrit = 1) and (igmhbccrit = 1 or hbsagrcrit = 1) and igmhavcrit = 1 and onsetcrit = 1) or
+ 		(LHJ = 'Los Angeles' and pstatus = 'Closed by State' and dtepisode < mdy(7,1,2011)) then confirmed = 1;
+ end;
+ /* 2012 case definition*/
+if cyear > 2011 then do;
+	if alt > 100 then altcrit = 1;
+	if index(sxs, 'JAUND') > 0 then sxscrit = 1;
+	if dtonset ^= . then onsetcrit = 1;
+	if hbsagr = 'POS' then hbsagrcrit = 1;
+	if igmhbcr ^= 'NEG' then igmhbccrit = 1;
+	if ((sxscrit = 1 or altcrit = 1) and (igmhbccrit = 1 and hbsagrcrit = 1) and onsetcrit = 1) or
+ 		(prneghbsag = 'Y' and hbsagrcrit = 1) then confirmed = 1;
+end;
+if age = . then agecat10 = .;
+	else if age < 10 then agecat10 = 1;
+	else if age > 9 and age < 20 then agecat10 = 2;
+	else if age > 19 and age < 30 then agecat10 = 3;
+	else if age > 29 and age < 40 then agecat10 = 4;
+	else if age > 39 and age < 50 then agecat10 = 5;
+	else if age > 49 and age < 60 then agecat10 = 6;
+	else if age > 59 then agecat10 = 7;
+if ethnicity = 'Hispanic/Latino' then raceeth = 'HISPANIC';
+	else if race = 'American Indian or Alaska Native' then raceeth = 'AI/AN';
+	else if race = 'Asian' then raceeth = 'ASIAN';
+	else if race = 'Black or African American' then raceeth = 'BLACK';
+	else if race = 'Multiple Races' then raceeth = 'MULTIPLE';
+	else if race = 'Other' then raceeth = 'OTHER';
+	else if race = 'White' then raceeth = 'WHITE';
+	else raceeth = 'UNKNOWN';
+if stickpunct = 'Y' or othexp = 'Y' then accident = 1; else accident = 0;
+if (bpierce = 'Y' and bpierceloc in ('OTH', 'COREFAC')) or (tattoo = 'Y' and tattooloc in ('OTH', 'COREFAC')) then unregcosm = 1; else unregcosm = 0;
+if bpierce = 'Y' or tattoo = 'Y' or mani = 'Y' then cosmetic = 1; else cosmetic = 0;
+if inject = 'Y' or noninject = 'Y' then druguse = 1; else druguse = 0;
+if (msex = 'Y' and (msexnum ^= '1' and msexnum ^= '')) or (Fsex = 'Y' and (fsexnum ^= '1' and fsexnum ^= '')) or (fsex = 'Y' and msex = 'Y') then sexrisk = 1; else sexrisk =0;
+if prhosp = 'Y' or bldtrans = 'Y' or dental = 'Y' or hemodial = 'Y' or rxinject = 'Y' or surgery = 'Y' or outpat = 'Y' or fstick = 'Y' or acupunct = 'Y' 
+   or podiat = 'Y' or chemo = 'Y' then exphealth = 1; else exphealth = 0;
+if bdonor = 'Y' or prneghbsag = 'Y' then recentneg = 1; else recentneg = 0;
+if contact = 'Y' or epilink = 'Y' then link = 1; else link = 0;
+if index(contacttype, 'INJ') > 0 then transcat = 'DRUG USE';
+else if index(contacttype, 'SEX') > 0 then transcat = 'SEX';
+else if index(contacttype, 'OCC') > 0 or index(contacttype, 'HSH') > 0 or index(contacttype, 'OTH') > 0 then transcat = 'ACCIDENT';
+if transcat = '' then do; 
+	if druguse = 1 then transcat = 'DRUG USE';
+	else if unregcosm = 1 then transcat = 'UNREG COSMETIC';
+	else if sexrisk = 1 then transcat = 'SEX';
+	else if accident = 1 then transcat = 'ACCIDENT';
+	else if exphealth = 1 then transcat = 'HEALTHCARE';
+	else transcat = 'UNKNOWN';
+end;
+correct = 0;
+prison = 0;
+if inmate ='Y' or
+   occsettingtype = 'Correctional Facility' or
+   prxmatch("m/inmate|prison|incarc/oi", occspecify) > 0 or
+   prxmatch("m/Prison|Correction/oi", occlocation) > 0 or
+   prxmatch("m/Central California Women's Facility|California Institution for Men|California Institution for Women|California Men's Colony|California Correctional/oi", occlocation) > 0 or
+   prxmatch("m/California Medical Facility|California Rehabilitation Center|Deuel Vocational Institution|Substance Abuse Treatment Facility|Sierra Conservation Center|Correctional Training Facility/oi", occlocation) then correct = 1;
+if prxmatch("m/prison/oi", occspecify) > 0 or
+   prxmatch("m/Prison/oi", occlocation) > 0 or
+   prxmatch("m/Central California Women's Facility|California Institution for Men|California Institution for Women|California Men's Colony|California Correctional/oi", occlocation) > 0 or
+   prxmatch("m/California Medical Facility|California Rehabilitation Center|Deuel Vocational Institution|Substance Abuse Treatment Facility|Sierra Conservation Center|Correctional Training Facility/oi", occlocation) then prison = 1;
+if ((rstatus = 'Confirmed') or (rstatus = 'Probable' and pstatus = 'Closed by State')) and Dtepisode > mdy(12,31,2010);
+run;
+
+data reposit.hbv&year.;
+set hbv&year.;
+run;
+
+proc freq data = hbv&year.;
+tables (agecat10 raceeth sex druguse sexrisk unregcosm accident)*cyear/missing;
+where rstatus = 'Confirmed' and cyear > 2010;
+run;
+
+proc freq data = hbv&year.;
+tables lhj*cyear/missing out = hbvreport;
+where rstatus = 'Confirmed' and cyear > 2010;
+run;
+
+
