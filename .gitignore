@@ -2,7 +2,7 @@
 ## SAS
 #################
 #Sas Datasets
-.sas7bdat
+*.sas7bdat
 
 #################
 ## Eclipse
